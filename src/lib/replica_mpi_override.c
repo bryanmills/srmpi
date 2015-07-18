@@ -248,6 +248,21 @@ int MPI_Cart_rank (MPI_Comm comm, int *coords, int *rank ) {
 }
 
 
+/** This might not necessarily be linear, if the underlying gather and
+    bcast are not linear, at the very least its simple **/
+int LINEAR_MPI_Barrier( MPI_Comm comm )
+{
+	int rc = MPI_SUCCESS;
+
+	MPI_CHECK( rc = MPI_Gather( NULL, 0, MPI_BYTE, NULL, 0,
+                                MPI_BYTE, 0, comm ) );
+
+    MPI_CHECK( rc = MPI_Bcast( NULL, 0, MPI_BYTE, 0, comm ) );
+
+	return rc;
+}
+
+
 /** adapted from openmpi see,
     ~/openmpi-1.6.4/ompi/mca/coll/basic/coll_basic_barrier.c 
 
@@ -270,7 +285,16 @@ int MPI_Barrier( MPI_Comm comm )
 	MPI_CHECK( err = PMPI_Comm_size( comm, &size ) );
 
 //    // hack
-//    size = size / 2;
+	int extra = 0;
+//	  if(is_replica == 1) {
+//	    extra = (size / 2)-1;
+//	  } else {
+//	    extra = 0;
+//	      }
+//	if(is_replica == 1) {
+//	  return MPI_SUCCESS;
+//	}
+    size = size / 2;
 
     
     /* Send null-messages up and down the tree.  Synchronization at the
@@ -286,7 +310,7 @@ int MPI_Barrier( MPI_Comm comm )
         peer = rank | mask;
         if (peer < size) {
 
-            MPI_CHECK( err = PMPI_Recv( NULL, 0, MPI_BYTE, peer, 
+            MPI_CHECK( err = SC_Mirror_Recv( NULL, 0, MPI_BYTE, peer+extra, 
                                        BARRIER_TAG, comm, MPI_STATUS_IGNORE ) );
 
             //            err = MCA_PML_CALL(recv(NULL, 0, MPI_BYTE, peer,
@@ -303,7 +327,7 @@ int MPI_Barrier( MPI_Comm comm )
     if (rank > 0) {
         peer = rank & ~(1 << hibit);
 
-        MPI_CHECK( err = PMPI_Send( NULL, 0, MPI_BYTE, peer, 
+        MPI_CHECK( err = SC_Mirror_Send( NULL, 0, MPI_BYTE, peer+extra, 
                                    BARRIER_TAG, comm ) );
 
         //        err =
@@ -315,7 +339,7 @@ int MPI_Barrier( MPI_Comm comm )
             return err;
         }
 
-        MPI_CHECK( err = PMPI_Recv( NULL, 0, MPI_BYTE, peer, 
+        MPI_CHECK( err = SC_Mirror_Recv( NULL, 0, MPI_BYTE, peer+extra, 
                                    BARRIER_TAG, comm, MPI_STATUS_IGNORE ) );
     
         //        err = MCA_PML_CALL(recv(NULL, 0, MPI_BYTE, peer,
@@ -329,7 +353,7 @@ int MPI_Barrier( MPI_Comm comm )
         peer = rank | mask;
         if (peer < size) {
 
-            MPI_CHECK( err = PMPI_Send( NULL, 0, MPI_BYTE, peer, 
+            MPI_CHECK( err = SC_Mirror_Send( NULL, 0, MPI_BYTE, peer+extra, 
                                        BARRIER_TAG, comm ) );
 
             //            err = MCA_PML_CALL(send(NULL, 0, MPI_BYTE, peer,

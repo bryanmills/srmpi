@@ -117,7 +117,7 @@ int SC_Parallel_Irecv(void *buf, int count, MPI_Datatype datatype, int source, i
 
         int is_irecv = 1;
         MPI_Status *junk_stat = malloc(sizeof(MPI_Status));
-        /// XXX - any source is broken still broken
+        /// XXX - any source is broken to shit and back
         err = SC_Recv_any_source(buf, count, datatype, source, tag, comm, junk_stat);
         //        free(junk_stat);
     } else {

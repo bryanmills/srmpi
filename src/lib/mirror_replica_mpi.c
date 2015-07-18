@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 
-/** Start mirror functions **/
 /**
  * Builds a map which points one rank to his cooresponding replica
  * rank. Also sets the global variable is_replica to true or false.
